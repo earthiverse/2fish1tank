@@ -47,6 +47,17 @@ int main(int argc, char* argv[]) {
   Command command(team, password, match, ip);
   command.Connect();
 
+  // Start Monitoring Game State
+  cout << "Starting State Monitor..." << endl;
+  State state;
+  command.MonitorState();
+
   // Start Bot
+  while(true) {
+    // TODO: Get State
+    cout << "Doing Bot Stuff" << endl;
+
+    sleep(10);
+  }
   return 0;
 }
