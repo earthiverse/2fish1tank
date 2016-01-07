@@ -1,31 +1,12 @@
 #pragma once
 #include <mutex>
 #include <vector>
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
 #include "rapidjson/document.h"
+#include "map.hpp"
+#include "player.hpp"
+#include "tank.hpp"
 using namespace std;
 using namespace rapidjson;
-using namespace boost::geometry;
-
-enum TerrainType { SOLID, IMPASSABLE };
-
-struct Terrain {
-  // top left x-axis
-  double x;
-  // top left y-axis
-  double y;
-  double width;
-  double height;
-  TerrainType type;
-};
-
-struct Map {
-  double width;
-  double height;
-  std::vector<Terrain> terrain;
-};
 
 class State {
 public:
@@ -36,6 +17,8 @@ public:
   State(State const&) = delete;
   void operator=(State const&) = delete;
   void ParseJSON(string &json, string &match_id);
+  void SetMatchData(string _matchID); // TODO: password, team, name
+  // TODO: Refactor so it grabs the info out of state
 
 private:
   State();
@@ -43,6 +26,8 @@ private:
   double time_remaining;
   double time_updated;
   Map map;
+  Player self;
+  Player enemy;
 
   static std::mutex mutex;
 };
@@ -73,29 +58,34 @@ void State::ParseJSON(string &json, string &match_id) {
       time_updated = d["timestamp"].GetDouble();
 
       // Map & Terrain
-      const Value &t = d["map"]["terrain"];
+      const Value &v1 = d["map"]["terrain"];
       std::vector<Terrain> new_terrain;
-      for(SizeType i = 0; i < t.Size(); i++) {
-        const Value &t2 = t[i];
+      // Terrain is unlikely to change (unless beginning of game or sudden death...)
+      new_terrain.reserve(map.terrain.size());
+      for(SizeType i = 0; i < v1.Size(); i++) {
+        const Value &v2 = v1[i];
         // Corners
-        Terrain t3;
-        t3.x = t2["boundingBox"]["corner"][0].GetDouble();
-        t3.y = t2["boundingBox"]["corner"][1].GetDouble();
+        Terrain t;
+        t.x = v2["boundingBox"]["corner"][0].GetDouble();
+        t.y = v2["boundingBox"]["corner"][1].GetDouble();
         // Size
-        t3.width = t2["boundingBox"]["size"][0].GetDouble();
-        t3.height = t2["boundingBox"]["size"][1].GetDouble();
+        t.width = v2["boundingBox"]["size"][0].GetDouble();
+        t.height = v2["boundingBox"]["size"][1].GetDouble();
         // Type
-        string type_s = t2["type"].GetString();
+        string type_s = v2["type"].GetString();
         if(type_s.compare("IMPASSABLE") == 0) {
-          t3.type = TerrainType::IMPASSABLE;
+          t.type = TerrainType::IMPASSABLE;
         } else if(type_s.compare("SOLID") == 0) {
-          t3.type = TerrainType::SOLID;
+          t.type = TerrainType::SOLID;
         }
 
-        new_terrain.push_back(t3);
+        new_terrain.push_back(t);
       }
       map.terrain = new_terrain;
-      cout << "  We have " << map.terrain.size() << " thingies of terrain" << endl;
+
+      // Tanks
+      const Value &v2 = d["players"];
+      // TODO: Move team name to state so we can see what player we are and stuff
     } else {
       // Unknown Command
       cout << "Unknown comm_type: " << comm_type << endl;
