@@ -1,6 +1,5 @@
 #include <iostream>
 #include <boost/program_options.hpp>
-#include "bot.hpp"
 #include "command.hpp"
 namespace po = boost::program_options;
 using namespace std;
@@ -49,7 +48,7 @@ int main(int argc, char* argv[]) {
 
   // Start Monitoring Game State
   cout << "Starting State Monitor..." << endl;
-  State state;
+  State::Instance();
   command.MonitorState();
 
   // Start Bot

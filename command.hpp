@@ -1,6 +1,5 @@
 #pragma once
 #include <cassert>
-#include <mutex>
 #include <thread>
 #include <zmq.hpp>
 #include "rapidjson/document.h"
@@ -25,8 +24,6 @@ private:
   zmq::context_t context;
   zmq::socket_t state_socket;
   zmq::socket_t command_socket;
-
-  std::mutex mutex;
 public:
   Command(string &_team, string &_password, string &_match_id, string &_ip);
   void MonitorState();
@@ -67,9 +64,6 @@ string Command::GenerateConnectJSON() {
 }
 
 void Command::Connect() {
-  // Lock!
-  std::lock_guard<std::mutex> guard(mutex);
-
   string connectJSON = GenerateConnectJSON();
 
   // Generate the request
@@ -109,34 +103,8 @@ void Command::UpdateState() {
 
     // Parse what we got
     string data(static_cast<char*>(state.data()), state.size());
-    Document d;
-    d.Parse(data.c_str());
-
-    if(d.IsObject()) {
-      // Got Match Data (JSON)
-      // Parse what we've received
-      string comm_type = d["comm_type"].GetString();
-      std::lock_guard<std::mutex> guard(Command);
-      if(comm_type.compare("GAME_START") == 0) {
-        cout << "Starting Game!" << endl;
-      } else if(comm_type.compare("GAMESTATE") == 0) {
-        // TODO: Update State
-//        cout << "Game In Progress!" << endl;
-//        cout << "  Time Remaining: " << d["timeRemaining"].GetDouble() << "s" << endl;
-      } else if(comm_type.compare("GAME_END") == 0) {
-        cout << "Game Ending!" << endl;
-
-        // TODO: Check if there is any more games left. If there is none, stop playing.
-      } else {
-        // Unknown Command
-        cout << "comm_type: " << comm_type << endl;
-      }
-    } else {
-      // Got Match ID (GUID)
-      assert(match_id.compare(data) == 0);
-      continue;
-    }
-
+    State& s = State::Instance();
+    s.ParseJSON(data, match_id);
   }
 }
 
