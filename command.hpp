@@ -24,9 +24,9 @@ public:
 
   void MonitorState();
   void Connect();
-
+  void setCommandVars(string &_team, string &_password, string &_match_id, string &_ip);
 private:
-  Command(string &_team, string &_password, string &_match_id, string &_ip);
+  Command();
   string GenerateConnectJSON();
   void UpdateState();
 
@@ -43,8 +43,15 @@ private:
   
 };
 
-Command::Command(string &_team, string &_password, string &_match_id, string &_ip) : team(_team), password(_password), match_id(_match_id), ip(_ip),
-context(1), state_socket(context, ZMQ_SUB), command_socket(context, ZMQ_REQ) {
+Command::Command()  : context(1), state_socket(context, ZMQ_SUB), command_socket(context, ZMQ_REQ) {
+}
+
+void Command::setCommandVars(string &_team, string &_password, string &_match_id, string &_ip) {
+
+  team = _team;
+  password = _password;
+  match_id = _match_id;
+  ip = _ip;
   // Create String to Connect
   // TODO: Seperate port numbers as literals
   string state = "tcp://" + ip + ":5556";

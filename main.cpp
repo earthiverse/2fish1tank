@@ -47,8 +47,11 @@ int main(int argc, char* argv[]) {
 
   // Connect
   cout << "Connecting to '" << ip << "'..." << endl;
-  Command::Instance(team, password, match, ip);
-  Command::Instance().Connect();
+
+  Command &command = Command::Instance();
+
+  command.setCommandVars(team, password, match, ip);
+  command.Connect();
 
   // Start Monitoring Game State
   cout << "Starting State Monitor..." << endl;
