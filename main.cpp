@@ -41,6 +41,10 @@ int main(int argc, char* argv[]) {
   cout << "  Server IP: " << ip << endl;
   cout << "----------------------------------------" << endl << endl;
 
+  // Setup State
+  State &state = State::Instance();
+  state.SetMatchData(match, team);
+
   // Connect
   cout << "Connecting to '" << ip << "'..." << endl;
   Command command(team, password, match, ip);
@@ -48,7 +52,6 @@ int main(int argc, char* argv[]) {
 
   // Start Monitoring Game State
   cout << "Starting State Monitor..." << endl;
-  State::Instance();
   command.MonitorState();
 
   // Start Bot
