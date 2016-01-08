@@ -10,7 +10,23 @@
 using namespace rapidjson;
 
 class Command {
+public:
+  
+
+  static Command& Instance() {
+    static Command instance;
+    return instance;
+  }
+  
+
+  Command(Command const&) = delete;
+  void operator=(Command const&) = delete;
+
+  void MonitorState();
+  void Connect();
+
 private:
+  Command(string &_team, string &_password, string &_match_id, string &_ip);
   string GenerateConnectJSON();
   void UpdateState();
 
@@ -24,10 +40,7 @@ private:
   zmq::context_t context;
   zmq::socket_t state_socket;
   zmq::socket_t command_socket;
-public:
-  Command(string &_team, string &_password, string &_match_id, string &_ip);
-  void MonitorState();
-  void Connect();
+  
 };
 
 Command::Command(string &_team, string &_password, string &_match_id, string &_ip) : team(_team), password(_password), match_id(_match_id), ip(_ip),
