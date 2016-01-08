@@ -17,11 +17,14 @@ public:
   State(State const&) = delete;
   void operator=(State const&) = delete;
   void ParseJSON(string &json, string &match_id);
-  void SetMatchData(string _matchID); // TODO: password, team, name
+  void SetMatchData(string &_matchID, string &_teamName); // TODO: password, team, name
   // TODO: Refactor so it grabs the info out of state
 
 private:
   State();
+
+  string match_id;
+  string team_name;
 
   double time_remaining;
   double time_updated;
@@ -83,9 +86,40 @@ void State::ParseJSON(string &json, string &match_id) {
       }
       map.terrain = new_terrain;
 
-      // Tanks
+      // Players
       const Value &v2 = d["players"];
-      // TODO: Move team name to state so we can see what player we are and stuff
+      for(SizeType i = 0; i < v2.Size(); i++) {
+        const Value &v3 = v2[i];
+        Player p;
+        p.name = v3["name"].GetString();
+        p.score = v3["score"].GetDouble();
+
+        // Tanks
+        const Value &v4 = v3["tanks"];
+        for(SizeType j = 0; j < v4.Size(); j++) {
+          const Value &v5 = v4[j];
+          string id = v5["id"].GetString();
+          double hp = v5["health"].GetDouble();
+          double hitRadius = v5["hitRadius"].GetDouble();
+          double collisionRadius = v5["collisionRadius"].GetDouble();
+          bool alive = v5["alive"].GetBool();
+          double x = v5["position"][0].GetDouble();
+          double y= v5["position"][1].GetDouble();
+          double tracks = v5["tracks"].GetDouble();
+          double turret = v5["turret"].GetDouble();
+          double speed = v5["speed"].GetDouble();
+
+          // Projectiles
+          // TODO: Well, if we want to try to dodge them, we should add them.
+        }
+
+        // Assign user
+        if(team_name.compare(v3["name"].GetString()) == 0) {
+          self = p;
+        } else {
+          enemy = p;
+        }
+      }
     } else {
       // Unknown Command
       cout << "Unknown comm_type: " << comm_type << endl;
@@ -94,4 +128,9 @@ void State::ParseJSON(string &json, string &match_id) {
     // Got Match ID (GUID)
     assert(match_id.compare(json) == 0);
   }
+}
+
+void State::SetMatchData(string &_match_id, string &_team_name) {
+  team_name = _team_name;
+  match_id = _match_id;
 }
