@@ -11,13 +11,10 @@ using namespace rapidjson;
 
 class Command {
 public:
-  
-
   static Command& Instance() {
     static Command instance;
     return instance;
   }
-  
 
   Command(Command const&) = delete;
   void operator=(Command const&) = delete;
@@ -25,6 +22,9 @@ public:
   void MonitorState();
   void Connect();
   void setCommandVars(string &_team, string &_password, string &_match_id, string &_ip);
+
+  void Fire(string tankID);
+
 private:
   Command();
   string GenerateConnectJSON();
@@ -40,7 +40,6 @@ private:
   zmq::context_t context;
   zmq::socket_t state_socket;
   zmq::socket_t command_socket;
-  
 };
 
 Command::Command()  : context(1), state_socket(context, ZMQ_SUB), command_socket(context, ZMQ_REQ) {
@@ -98,7 +97,8 @@ void Command::Connect() {
   command_socket.recv(&reply);
 
   Document d;
-  d.Parse(static_cast<char*>(reply.data()));
+  string reply_data = string(static_cast<char*>(reply.data()), reply.size());
+  d.Parse(reply_data.c_str());
 
   cout << "--------------- Response ---------------" << endl;
   cout << "  " << static_cast<char*>(reply.data()) << endl;
@@ -132,4 +132,35 @@ void Command::MonitorState() {
   // Start the monitoring thread!
   std::thread monitor_thread(&Command::UpdateState, this);
   monitor_thread.detach();
+}
+
+void Command::Fire(string tankID) {
+  // Generate Fire JSON
+  Document d;
+  Document::AllocatorType& allocator = d.GetAllocator();
+  d.SetObject();
+  d.AddMember("tank_id", StringRef(tankID.c_str()), allocator);
+  d.AddMember("comm_type", "FIRE", allocator);
+  d.AddMember("client_token", StringRef(client_token.c_str()), allocator);
+
+  // Get JSON String
+  StringBuffer buf;
+  Writer<StringBuffer> writer(buf);
+  d.Accept(writer);
+  string fire_command = buf.GetString();
+
+  // Generate Fire Command
+  zmq::message_t request(fire_command.length());
+  memcpy(request.data(), fire_command.c_str(), fire_command.length());
+
+  // Send Fire Command
+  command_socket.send(request);
+
+  // Get reply
+  zmq::message_t reply;
+  command_socket.recv(&reply);
+  Document d2;
+  string reply_json(static_cast<char*>(reply.data()), reply.size());
+  d2.Parse(reply_json.c_str());
+  cout << "we got this from firing: " << reply_json << endl;
 }
