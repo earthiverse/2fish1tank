@@ -7,4 +7,5 @@ class Player {
 private:
   string name;
   float score;
+  
 };
