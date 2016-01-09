@@ -20,6 +20,8 @@ private:
 
 void TankManager::Act() {
   for (auto tank : State::Instance().getPlayerTanks()) {
+    //Tank target = getClosestEnemyTank(tank);
+    tank.RotateTurret(CW, 3.14);
     tank.Fire();
   }
 }

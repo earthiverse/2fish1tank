@@ -33,3 +33,9 @@ void Tank::Fire() {
 
 const double &Tank::getx() { return x; }
 const double &Tank::gety() { return y; }
+
+
+void Tank::RotateTurret(const Rotation &rot, const double &amt) {
+  Command &command = Command::Instance();
+  command.RotateTurret(id, rot, amt);
+}
