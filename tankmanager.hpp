@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 #include <utility>
+#include <algorithm>
 #include "command.hpp"
 #include "tank.hpp"
 #include "state.hpp"
@@ -15,12 +16,12 @@ public:
   void aimAt(Tank shooter, Tank target);
   double getShellTravelTime(Tank tank, Tank tank2);
 
-  double canFire(double x, double y, double x1, double y1);
+  double getAngle(double x , double y, double x1, double y1); 
+  bool isFriendinLine(Tank shooter, Tank target);
 
   std::pair<double,double> getVector(Tank tank);
   std::pair<double, double> getVector(double x, double y, double x1, double y2);
   
-  bool canFire(Tank tank);
 
 private:
 };
@@ -43,7 +44,11 @@ void TankManager::Act() {
     Tank target = getClosestEnemyTank(tank);
     aimAt(tank, target);
 //    tank.Move(FWD, 1);
-    tank.Fire();
+    if ( isFriendinLine(tank,target)) { 
+    }
+    else {
+      tank.Fire();
+    }
     std::cout << "tank id: " << tank.getID() << std::endl;
   }
 }
@@ -111,9 +116,38 @@ std::pair<double, double> TankManager::getVector(double x, double y, double x1, 
   return vec;
 }
 
-bool TankManager::canFire(Tank tank) {
-  auto firevec = getVector(tank);
-  while(1) {
-  
+double TankManager::getAngle(double x , double y, double x1, double y1) {
+  double angle = atan2(x- y, x1 - y1);
+  if(angle < 0) {
+    angle = angle + (2 * M_PI);
   }
+  return angle;
+}
+
+bool TankManager::isFriendinLine(Tank shooter, Tank target) {
+  //auto firevec = getVector(tank);
+  for( auto friendly : State::Instance().getPlayerTanks() ) {
+    if( friendly.getID() == shooter.getID()) {
+      continue;
+    }
+    double x = friendly.getx();
+    double y = friendly.gety();
+
+    double x1, y1, x2, y2 , x3, y3, x4, y4;
+    x1 = x - 2; y1 = y - 2; x2 = x + 2; y2 = y + 2; x3 = x - 2; y3 = y + 2; x4 = x + 2; y4 =y - 2;
+    
+    double angle1, angle2, angle3, angle4, angle2target;
+    angle2target = getAngle(shooter.getx(), shooter.gety(), target.getx(), target.gety());
+    angle1 = getAngle(shooter.getx(), shooter.gety(), x1, y1);
+    angle2 = getAngle(shooter.getx(), shooter.gety(), x2, y2);
+    angle3 = getAngle(shooter.getx(), shooter.gety(), x3, y3);
+    angle4 = getAngle(shooter.getx(), shooter.gety(), x4, y4);
+    auto result = std::minmax({angle1,angle2,angle3,angle4});
+    auto max = result.second;
+    auto min = result.first;
+    if( angle2target < max && angle2target > min ) {
+      return true;
+    }
+  }
+  return false;
 }
