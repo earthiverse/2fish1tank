@@ -20,6 +20,8 @@ public:
   // State
   std::string GetStateJSON();
 
+  // Game Commands
+  void Fire(const std::string &tank_id);
 private:
   Command(); /* Singleton */
   Command(Command const&) = delete;
@@ -28,8 +30,6 @@ private:
   // Helper Functions
   const std::string GenerateConnectJSON(); /* To connect to match and get token */
 
-  // Game Commands
-  void Fire(const std::string &tank_id);
 
   // Match Variables
   std::string match;
