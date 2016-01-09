@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "terrain.hpp"
 #include "command.hpp"
 #include "tank.hpp"
 
@@ -37,8 +38,8 @@ private:
 //  std::unordered_map<std::string, Projectile> player_projectiles;
 //  std::unordered_map<std::string, Projectile> enemy_projectiles;
   // Top left x-axis, top left y-axis, width, height
-  std::vector<std::tuple<double, double, double, double>> solid_terrain; /* Can not shoot or move */
-  std::vector<std::tuple<double, double, double, double>> impassable_terrain; /* Cannot move, can shoot */
+  std::vector<Terrain> solid_terrain; /* Can not shoot or move */
+  std::vector<Terrain> impassable_terrain; /* Cannot move, can shoot */
 
   // State Monitoring
   std::mutex running;
