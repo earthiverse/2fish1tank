@@ -251,6 +251,11 @@ std::string Command::GetStateJSON() {
 }
 
 std::string Command::SendCommand(const std::string &json) {
+  #ifdef NDEBUG
+  std::cout << "--------------- Request ----------------" << std::endl;
+  std::cout << "  " << json << std::endl;
+  #endif
+
   // Prepare
   zmq::message_t request(json.length());
   memcpy(request.data(), json.c_str(), json.length());

@@ -53,7 +53,7 @@ void Tank::Move(const Direction &dir, const double &amt) {
   command.Move(id, dir, amt);
 }
 void Tank::Rotate(const Rotation &rot, const double &amt) {
-  Command $command = Command::Instance();
+  Command &command = Command::Instance();
   command.Rotate(id, rot, amt);
 }
  
