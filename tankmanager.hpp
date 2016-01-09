@@ -54,8 +54,9 @@ Tank TankManager::getClosestEnemyTank(Tank shooter) {
 
 void TankManager::fireAt(Tank shooter, Tank target) {
   auto vec1 = getVector(shooter);
-  double costheta = vec1.first * target.getx() + vec1.second * target.gety();
-  double theta = acos(costheta);
+  double dot = vec1.first * target.getx() + vec1.second * target.gety();
+  double length = sqrt( pow( vec1.first, 2) + pow( vec1.second, 2)) * sqrt( pow( target.getx(),2) + pow( target.gety(),2) );
+  double theta = acos(dot/length);
   if ( theta > 3.14 ) {
     shooter.RotateTurret(CCW, theta);
   } else {
