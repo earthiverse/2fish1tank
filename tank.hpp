@@ -14,11 +14,13 @@ public:
 
   const double &getx();
   const double &gety();
+  const double &getturret();
 
 private:
   std::string id;
   double x;
   double y;
+  double turret;
 };
 
 Tank::Tank(std::string id) : id(id) {
@@ -48,4 +50,7 @@ void Tank::Rotate(const Rotation &rot, const double &amt) {
   Command $command = Command::Instance();
   command.Rotate(id, rot, amt);
 }
- 
+
+const double & Tank::getturret() {
+  return turret;
+}
