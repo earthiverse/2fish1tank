@@ -1,6 +1,5 @@
 #pragma once
 #include <chrono>
-#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -17,14 +16,7 @@ public:
   State(State const&) = delete;
   void operator=(State const&) = delete;
 
-  void Update(const std::string &json); /* Parses state JSON */
-
-  // Concurrency
-  std::mutex mutex;
-
-  // State monitoring
-  void StartMonitoring(); /* Creates & starts thread to monitor state */
-  void StopMonitoring(); /* Stops the thread monitoring state */
+  void Update();
 
   const std::vector<Tank> &getPlayerTanks();
   const std::vector<Tank> &getEnemyTanks();
@@ -46,11 +38,6 @@ private:
 
   // Misc.
   std::string team;
-
-  // State Monitoring
-  std::mutex running;
-  std::thread monitor_thread;
-  void UpdateState(); /* Infinite loop of updating state */
 };
 
 State::State() {
@@ -58,7 +45,10 @@ State::State() {
   team = command.GetTeamName();
 }
 
-void State::Update(const std::string &json) {
+void State::Update() {
+  Command &command = Command::Instance();
+  std::string json = command.GetStateJSON();
+
   std::chrono::milliseconds _timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
   rapidjson::Document d;
   d.Parse(json.c_str());
@@ -73,24 +63,23 @@ void State::Update(const std::string &json) {
       // Match has ended
     } else if(comm_type.compare("GAME_END") == 0) {
       // Game has ended
-      running.lock();
+      // TODO: Something to end the program
     } else if(comm_type.compare("GAMESTATE") == 0) {
-      std::lock_guard<std::mutex> lock(mutex);
       // General State Stuff
       timestamp = _timestamp;
 
-      // TODO: Map stuff
+     // TODO: Map stuff
 
       // Players
       rapidjson::Value &v_players = d["players"];
+
+      // Clear existing tank data
+      player_tanks.clear();
+      enemy_tanks.clear();
       for(rapidjson::SizeType i = 0; i < v_players.Size(); i++) {
         rapidjson::Value &v_player = v_players[i];
         std::string player_name = v_player["name"].GetString();
 
-        // Tanks
-        // Clear existing data
-        player_tanks.clear();
-        enemy_tanks.clear();
         // Set new data
         rapidjson::Value &v_tanks = v_player["tanks"];
         for(rapidjson::SizeType j = 0; j < v_tanks.Size(); j++) {
@@ -100,8 +89,8 @@ void State::Update(const std::string &json) {
           tank.x = v_tank["position"][0].GetDouble();
           tank.y = v_tank["position"][1].GetDouble();
           tank.alive = v_tank["alive"].GetBool();
-//          tank.tracks = v_tank["tracks"].GetDouble();
-//          tank.turret = v_tank["turret"].GetDouble();
+          tank.tracks = v_tank["tracks"].GetDouble();
+          tank.turret = v_tank["turret"].GetDouble();
 
           if(team.compare(player_name) == 0) {
             // It's us!
@@ -121,32 +110,6 @@ void State::Update(const std::string &json) {
     // TODO: Assert maybe?
   }
 }
-
-void State::UpdateState() {
-  while(true) {
-    // Check if we're still supposed to be running
-    if(running.try_lock()) {
-      // Get new state data
-      Command &command = Command::Instance();
-      Update(command.GetStateJSON());
-    } else {
-      // We're supposed to die now
-      break;
-    }
-    running.unlock();
-  }
-}
-
-void State::StartMonitoring() {
-  monitor_thread = std::thread(&State::UpdateState, this);
-}
-
-void State::StopMonitoring() {
-  running.lock();
-  monitor_thread.join();
-  running.unlock();
-}
-
 
 const std::vector<Tank> & State::getPlayerTanks() {
   return player_tanks;

@@ -11,10 +11,9 @@ public:
   void Act();
   Tank getClosestEnemyTank(Tank tank);
   double getDistance(Tank tank1, Tank tank2);
-  double getDistance(double x, double y, double x1, double y1);
 
-  void fireAt(Tank shooter, Tank target);
-  double getShellTravelTime(Tank tank, double x, double y);
+  void aimAt(Tank shooter, Tank target);
+  double getShellTravelTime(Tank tank, Tank tank2);
 
   std::pair<double,double> getVector(Tank tank);
   std::pair<double, double> getVector(double x, double y, double x1, double y2);
@@ -24,35 +23,40 @@ private:
 
 void TankManager::Act() {
   State &state = State::Instance();
-  std::lock_guard<std::mutex> lock(state.mutex);
-  for (auto tank : State::Instance().getPlayerTanks()) {
+
+  // If we don't have any tanks yet don't act
+  if(state.getPlayerTanks().empty() || state.getEnemyTanks().empty()) {
+    std::cout << "we're all out of tanks" << std::endl;
+    std::cout << "player tanks: " << state.getPlayerTanks().size() << std::endl;
+    std::cout << "enemy tanks: " << state.getEnemyTanks().size() << std::endl;
+    return;
+  }
+
+  for (auto tank : state.getPlayerTanks()) {
     if(!tank.isAlive()) {
       continue;
     }
     Tank target = getClosestEnemyTank(tank);
-    //tank.RotateTurret(CW, 3.14);
-    //tank.Fire();
-    //tank.Move(FWD, 5);
-    //tank.Rotate(CW, 3.14);
-    fireAt(tank,target);
+    aimAt(tank,target);
     std::cout << "tank id: " << tank.getID() << std::endl;
+    return;
   }
 }
 
 Tank TankManager::getClosestEnemyTank(Tank shooter) {
-  if(State::Instance().getEnemyTanks().empty()) {
-    
-  }
-  Tank target = State::Instance().getEnemyTanks()[0];
-  for (auto tank : State::Instance().getEnemyTanks()) {
-    if (getDistance(shooter,target) > getDistance(shooter,tank)) {
+  State &state = State::Instance();
+  Tank target = state.getEnemyTanks()[0];
+  int i = 0;
+  for (const auto &tank : state.getEnemyTanks()) {
+    if (getDistance(shooter, target) > getDistance(shooter, tank)) {
+      std::cout << "i found a closer tank" << std::endl;
       target = tank;
     }
   }
   return target;
 }
 
-void TankManager::fireAt(Tank shooter, Tank target) {
+void TankManager::aimAt(Tank shooter, Tank target) {
   auto vec1 = getVector(shooter);
   double dot = vec1.first * target.getx() + vec1.second * target.gety();
   double length = sqrt( pow( vec1.first, 2) + pow( vec1.second, 2)) * sqrt( pow( target.getx(),2) + pow( target.gety(),2) );
@@ -62,21 +66,16 @@ void TankManager::fireAt(Tank shooter, Tank target) {
   } else {
     shooter.RotateTurret(CW, theta);
   }
-  shooter.Fire();
+//  shooter.Fire();
 }
 
 
 double TankManager::getDistance(Tank tank1, Tank tank2) {
-  return std::sqrt(std::pow(tank1.getx() - tank2.getx(),2) + std::pow(tank1.gety() - tank2.gety(), 2));
+  return std::pow(tank1.getx() - tank2.getx(), 2) + std::pow(tank1.gety() - tank2.gety(), 2);
 }
 
-double TankManager::getDistance(double x, double y, double x1, double y1) {
-  return std::sqrt(std::pow(x - x1,2) + std::pow(y - y1, 2));
-}
-
-
-double TankManager::getShellTravelTime(Tank tank, double x, double y) {
-  double dist = getDistance(tank.getx(), tank.gety(), x, y);
+double TankManager::getShellTravelTime(Tank tank, Tank tank2) {
+  double dist = getDistance(tank, tank2);
   return dist / 30;
 }
 

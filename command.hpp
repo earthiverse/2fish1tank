@@ -242,9 +242,8 @@ void Command::RotateTurret(const std::string &tank_id, const Rotation &rot, cons
 }
 
 std::string Command::GetStateJSON() {
-  std::cout << "getting state json" << std::endl;
-
   // Get new state data
+  // TODO: I think this throws a std::bad_alloc exception...
   zmq::message_t m;
   state_socket.recv(&m);
 

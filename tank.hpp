@@ -32,6 +32,7 @@ private:
   std::string id;
   double x;
   double y;
+  double tracks;
   double turret;
   bool alive;
 

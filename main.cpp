@@ -42,25 +42,30 @@ int main(int argc, char* argv[]) {
   std::string ip = args["ip"].as<std::string>();
 
   // Setup game
-  Command &command = Command::Instance();
-  command.Setup(match, team, password, ip);
-  usleep(100);
+  try {
+    Command &command = Command::Instance();
+    command.Setup(match, team, password, ip);
 
-  // Start monitoring state
-  State &state = State::Instance();
-  state.StartMonitoring();
+    // Start monitoring state
+    State &state = State::Instance();
 
-  TankManager tankmanager;
+    TankManager tankmanager;
 
-  while(true) {
-    #ifdef NDEBUG
-//    std::cout << "Game is running..." << std::endl;
-    #endif
-    tankmanager.Act();
-//    usleep(100);
+    while(true) {
+      // Update State
+      state.Update();
+
+      // Act on the updated state
+      #ifdef NDEBUG
+  //    std::cout << "Game is running..." << std::endl;
+      #endif
+      tankmanager.Act();
+      usleep(10000);
+    }
+  } catch (const std::exception &e) {
+    std::cout << "!!!!! Caught Exception!" << std::endl;
+    std::cout << e.what() << std::endl;
   }
-
-  state.StopMonitoring();
 
   return 0;
 }
