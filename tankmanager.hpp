@@ -16,6 +16,8 @@ public:
   void fireAt(Tank shooter, Tank target);
   double getShellTravelTime(Tank tank, double x, double y);
 
+  double canFire(double x, double y, double x1, double ,y1);
+
   std::pair<double,double> getVector(Tank tank);
   std::pair<double, double> getVector(double x, double y, double x1, double y2);
 
@@ -101,3 +103,8 @@ std::pair<double, double> TankManager::getVector(double x, double y, double x1, 
   vec.second = y - y1;
   return vec;
 }
+
+
+double TankManager::canFire(double x, double y, double x1, double ,y1) {
+
+
