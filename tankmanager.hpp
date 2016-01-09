@@ -15,6 +15,8 @@ public:
   void aimAt(Tank shooter, Tank target);
   double getShellTravelTime(Tank tank, Tank tank2);
 
+  double canFire(double x, double y, double x1, double y1);
+
   std::pair<double,double> getVector(Tank tank);
   std::pair<double, double> getVector(double x, double y, double x1, double y2);
 
@@ -57,14 +59,12 @@ Tank TankManager::getClosestEnemyTank(Tank shooter) {
 }
 
 void TankManager::aimAt(Tank shooter, Tank target) {
-  auto vec1 = getVector(shooter);
-  double dot = vec1.first * target.getx() + vec1.second * target.gety();
-  double length = sqrt( pow( vec1.first, 2) + pow( vec1.second, 2)) * sqrt( pow( target.getx(),2) + pow( target.gety(),2) );
-  double theta = acos(dot/length);
-  if ( theta > 3.14 ) {
-    shooter.RotateTurret(CCW, theta);
+  double angle = atan2(target.gety() - shooter.gety(), target.getx() - shooter.getx());
+  double turn = angle - shooter.getturret();
+  if (turn > 0) {
+    shooter.RotateTurret(CCW, turn);
   } else {
-    shooter.RotateTurret(CW, theta);
+    shooter.RotateTurret(CW, -1 * turn);
   }
 //  shooter.Fire();
 }
@@ -92,5 +92,3 @@ std::pair<double, double> TankManager::getVector(double x, double y, double x1, 
   vec.second = y - y1;
   return vec;
 }
-
-
