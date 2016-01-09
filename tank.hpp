@@ -1,5 +1,7 @@
 #pragma once
 
+#include "command.hpp"
+
 enum TankType { FAST, SLOW };
 enum TankDirection { FWD, REV };
 enum TankRotation { CW, CCW };
@@ -19,6 +21,6 @@ Tank::Tank(std::string id) : id(id) {
 
 void Tank::Fire() {
   // TODO: Determine if we'll hit friend
-
+  Command &command = Command::Instance();
   // TODO: Send fire command
 }

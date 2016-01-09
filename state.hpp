@@ -1,9 +1,11 @@
 #pragma once
 #include <chrono>
 #include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
+#include "command.hpp"
 #include "tank.hpp"
 
 class State {
@@ -20,6 +22,10 @@ public:
   // Concurrency
   std::mutex mutex;
 
+  // State monitoring
+  void StartMonitoring(); /* Creates & starts thread to monitor state */
+  void StopMonitoring(); /* Stops the thread monitoring state */
+
 private:
   State();
 
@@ -33,6 +39,11 @@ private:
   // Top left x-axis, top left y-axis, width, height
   std::vector<std::tuple<double, double, double, double>> solid_terrain; /* Can not shoot or move */
   std::vector<std::tuple<double, double, double, double>> impassable_terrain; /* Cannot move, can shoot */
+
+  // State Monitoring
+  std::mutex running;
+  std::thread monitor_thread;
+  void UpdateState(); /* Infinite loop of updating state */
 };
 
 State::State() {
@@ -70,4 +81,29 @@ void State::Update(const std::string &json) {
     // Got Mach ID (GUID)
     // TODO: Assert maybe?
   }
+}
+
+void State::UpdateState() {
+  while(true) {
+    // Check if we're still supposed to be running
+    if(running.try_lock()) {
+      // Get new state data
+      Command &command = Command::Instance();
+      Update(command.GetStateJSON());
+    } else {
+      // We're supposed to die now
+      break;
+    }
+    running.unlock();
+  }
+}
+
+void State::StartMonitoring() {
+  monitor_thread = std::thread(&State::UpdateState, this);
+}
+
+void State::StopMonitoring() {
+  running.lock();
+  monitor_thread.join();
+  running.unlock();
 }

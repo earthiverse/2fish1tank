@@ -40,13 +40,13 @@ int main(int argc, char* argv[]) {
   std::string password = args["password"].as<std::string>();
   std::string ip = args["ip"].as<std::string>();
 
-  // Start monitoring state
-//  State &state = State::Instance();
-
   // Setup game
   Command &command = Command::Instance();
   command.Setup(match, team, password, ip);
-  command.StartMonitorState();
+
+  // Start monitoring state
+  State &state = State::Instance();
+  state.StartMonitoring();
 
   while(true) {
     #ifdef NDEBUG
@@ -55,6 +55,8 @@ int main(int argc, char* argv[]) {
 
     usleep(100);
   }
+
+  state.StopMonitoring();
 
   return 0;
 }

@@ -7,8 +7,6 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
-#include "state.hpp"
-
 class Command {
 public:
   static Command& Instance() {
@@ -19,9 +17,8 @@ public:
   // Setup variables from program start
   void Setup(const std::string &match, const std::string &team, const std::string &password, const std::string &ip);
 
-  // State monitoring
-  void StartMonitorState(); /* Creates & starts thread to monitor state */
-  void StopMonitorState(); /* Stops the thread monitoring state */
+  // State
+  std::string GetStateJSON();
 
 private:
   Command(); /* Singleton */
@@ -31,13 +28,8 @@ private:
   // Helper Functions
   const std::string GenerateConnectJSON(); /* To connect to match and get token */
 
-  // State Commands
-  std::mutex running;
-  std::thread monitor_thread;
-  void UpdateState(); /* Infinite loop of updating state */
-
   // Game Commands
-  void Fire(std::string tank_id);
+  void Fire(const std::string &tank_id);
 
   // Match Variables
   std::string match;
@@ -104,7 +96,7 @@ void Command::Setup(const std::string &_match, const std::string &_team, const s
 const std::string Command::GenerateConnectJSON() {
   // Construct JSON
   rapidjson::Document d;
-  rapidjson::Document::AllocatorType& a = d.GetAllocator();
+  rapidjson::Document::AllocatorType &a = d.GetAllocator();
   d.SetObject();
   d.AddMember("comm_type", "MatchConnect", a);
   d.AddMember("match_token", rapidjson::StringRef(match.c_str()), a);
@@ -125,35 +117,21 @@ const std::string Command::GenerateConnectJSON() {
   return b.GetString();
 }
 
-void Command::Fire(std::string tank_id) {
+void Command::Fire(const std::string &tank_id) {
+  // Construct JSON
+  rapidjson::Document d;
+  rapidjson::Document::AllocatorType &a = d.GetAllocator();
+  d.SetObject();
+  d.AddMember("tank_id", rapidjson::StringRef(tank_id.c_str()), a);
+  d.AddMember("comm_type", "FIRE", a);
+  d.AddMember("client_token", rapidjson::StringRef(token.c_str()), a);
 }
 
-void Command::UpdateState() {
-  while(true) {
-    // Check if we're still supposed to be running
-    if(running.try_lock()) {
-      // Get new state data
-      zmq::message_t m;
-      state_socket.recv(&m);
+std::string Command::GetStateJSON() {
+  // Get new state data
+  zmq::message_t m;
+  state_socket.recv(&m);
 
-      // Parse what we got
-      std::string d(static_cast<char*>(m.data()), m.size());
-      State &s = State::Instance();
-      s.Update(d);
-    } else {
-      // We're supposed to die
-      break;
-    }
-    running.unlock();
-  }
-}
-
-void Command::StartMonitorState() {
-  monitor_thread = std::thread(&Command::UpdateState, this);
-}
-
-void Command::StopMonitorState() {
-  running.lock();
-  monitor_thread.join();
-  running.unlock();
+  // Parse what we got
+  return std::string(static_cast<char*>(m.data()), m.size());
 }
