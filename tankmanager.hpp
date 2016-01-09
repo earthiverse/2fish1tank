@@ -1,8 +1,10 @@
 #pragma once
-#include <vector>
+#include <algorithm>
+#include <cstdlib>
 #include <cmath>
 #include <utility>
-#include <algorithm>
+#include <vector>
+
 #include "command.hpp"
 #include "tank.hpp"
 #include "state.hpp"
@@ -16,14 +18,11 @@ public:
   void aimAt(Tank shooter, Tank target);
   double getShellTravelTime(Tank tank, Tank tank2);
 
-  double getAngle(double x , double y, double x1, double y1); 
+  double getAngle(double x , double y, double x1, double y1);
   bool isFriendinLine(Tank shooter, Tank target);
 
   std::pair<double,double> getVector(Tank tank);
   std::pair<double, double> getVector(double x, double y, double x1, double y2);
-  
-
-private:
 };
 
 void TankManager::Act() {
@@ -42,40 +41,38 @@ void TankManager::Act() {
       continue;
     }
     Tank target = getClosestEnemyTank(tank);
+
+    // Aim!
     aimAt(tank, target);
-//    tank.Move(FWD, 1);
-    if ( isFriendinLine(tank,target)) { 
+
+    // Fire!
+    if (isFriendinLine(tank,target)) {
+      tank.StopFire();
     }
     else {
       tank.Fire();
     }
-    std::cout << "tank id: " << tank.getID() << std::endl;
+
+    // Move!
+    srand(time(0));
+    if(rand() % 2) {
+      tank.Move(FWD, 10);
+    } else {
+      tank.Move(REV, 10);
+    }
   }
 }
 
 Tank TankManager::getClosestEnemyTank(Tank shooter) {
   State &state = State::Instance();
   Tank target = state.getEnemyTanks()[0];
-  int i = 0;
   for (const auto &tank : state.getEnemyTanks()) {
     if (getDistance(shooter, target) > getDistance(shooter, tank)) {
-      std::cout << "i found a closer tank" << std::endl;
       target = tank;
     }
   }
   return target;
 }
-
-/*void TankManager::aimAt(Tank shooter, Tank target) {
-  double angle = atan2(target.gety() - shooter.gety(), target.getx() - shooter.getx());
-  double turn = angle - shooter.getturret();
-  if (turn > 0) {
-    shooter.RotateTurret(CCW, turn);
-  } else {
-    shooter.RotateTurret(CW, -1 * turn);
-  }
-//  shooter.Fire();
-}*/
 
 void TankManager::aimAt(Tank shooter, Tank target) {
   double angle = atan2(target.gety() - shooter.gety(), target.getx() - shooter.getx());
