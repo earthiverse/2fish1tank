@@ -48,12 +48,13 @@ int main(int argc, char* argv[]) {
   // Start monitoring state
   State &state = State::Instance();
   state.StartMonitoring();
-
+  
+  TankManager tankmanager;
   while(true) {
     #ifdef NDEBUG
 //    std::cout << "Game is running..." << std::endl;
     #endif
-
+    tankmanager.Act();
     usleep(100);
   }
 

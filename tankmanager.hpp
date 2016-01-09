@@ -8,7 +8,6 @@
 
 class TankManager {
 public:
-  TankManager();
   void Act();
   Tank getClosestEnemyTank(Tank tank);
   double getDistance(Tank tank1, Tank tank2);
@@ -20,26 +19,23 @@ private:
 };
 
 void TankManager::Act() {
-
-//  for (auto tank : State::Instance().getPlayerTanks()) {
-    //tank.Move();
-  //}
+  for (auto tank : State::Instance().getPlayerTanks()) {
+    tank.Fire();
+  }
 }
 
-/*
 Tank TankManager::getClosestEnemyTank(Tank shooter) {
   if(State::Instance().getEnemyTanks().empty()) {
     
   }
-  Tank target = State::Instance().getEnemyTanks();
-  for (const auto &tankpair : State::Instance().getEnemyTanks()) {
-    const auto tank = tankpair.second();
-    if (getDistance(shooter,target) > getDistance(shooter,tank) {
+  Tank target = State::Instance().getEnemyTanks()[0];
+  for (auto tank : State::Instance().getEnemyTanks()) {
+    if (getDistance(shooter,target) > getDistance(shooter,tank)) {
       target = tank;
     }
   }
   return target;
-}*/
+}
 
 void TankManager::fireAt(Tank shooter, Tank target) {
   
