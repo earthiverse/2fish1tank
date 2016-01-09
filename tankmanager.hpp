@@ -41,9 +41,10 @@ void TankManager::Act() {
       continue;
     }
     Tank target = getClosestEnemyTank(tank);
-    aimAt(tank,target);
+    aimAt(tank, target);
+//    tank.Move(FWD, 1);
+    tank.Fire();
     std::cout << "tank id: " << tank.getID() << std::endl;
-    return;
   }
 }
 
@@ -60,7 +61,7 @@ Tank TankManager::getClosestEnemyTank(Tank shooter) {
   return target;
 }
 
-void TankManager::aimAt(Tank shooter, Tank target) {
+/*void TankManager::aimAt(Tank shooter, Tank target) {
   double angle = atan2(target.gety() - shooter.gety(), target.getx() - shooter.getx());
   double turn = angle - shooter.getturret();
   if (turn > 0) {
@@ -69,8 +70,23 @@ void TankManager::aimAt(Tank shooter, Tank target) {
     shooter.RotateTurret(CW, -1 * turn);
   }
 //  shooter.Fire();
-}
+}*/
 
+void TankManager::aimAt(Tank shooter, Tank target) {
+  double angle = atan2(target.gety() - shooter.gety(), target.getx() - shooter.getx());
+  if(angle < 0) {
+    angle = angle + (2 * M_PI);
+  }
+  double current = shooter.getturret();
+  double amount = angle - current;
+  if(amount > 0) {
+    shooter.RotateTurret(CCW, amount / 2);
+    shooter.Rotate(CCW, amount / 2);
+  } else {
+    shooter.RotateTurret(CW, -amount / 2);
+    shooter.Rotate(CW, -amount / 2);
+  }
+}
 
 double TankManager::getDistance(Tank tank1, Tank tank2) {
   return std::pow(tank1.getx() - tank2.getx(), 2) + std::pow(tank1.gety() - tank2.gety(), 2);

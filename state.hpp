@@ -84,11 +84,13 @@ void State::Update() {
         rapidjson::Value &v_tanks = v_player["tanks"];
         for(rapidjson::SizeType j = 0; j < v_tanks.Size(); j++) {
           rapidjson::Value &v_tank = v_tanks[j];
-          std::string tank_id = v_tank["id"].GetString();
-          Tank tank(tank_id);
+          if(!v_tank["alive"].GetBool()) {
+            continue;
+          }
+          Tank tank(v_tank["id"].GetString());
+          tank.alive = v_tank["alive"].GetBool();
           tank.x = v_tank["position"][0].GetDouble();
           tank.y = v_tank["position"][1].GetDouble();
-          tank.alive = v_tank["alive"].GetBool();
           tank.tracks = v_tank["tracks"].GetDouble();
           tank.turret = v_tank["turret"].GetDouble();
 
