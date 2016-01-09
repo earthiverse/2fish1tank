@@ -1,5 +1,6 @@
 #pragma once
-#include <cassert>
+#include <iostream>
+#include <mutex>
 #include <thread>
 #include <zmq.hpp>
 #include "rapidjson/document.h"
@@ -7,7 +8,6 @@
 #include "rapidjson/stringbuffer.h"
 
 #include "state.hpp"
-using namespace rapidjson;
 
 class Command {
 public:
@@ -16,151 +16,144 @@ public:
     return instance;
   }
 
+  // Setup variables from program start
+  void Setup(const std::string &match, const std::string &team, const std::string &password, const std::string &ip);
+
+  // State monitoring
+  void StartMonitorState(); /* Creates & starts thread to monitor state */
+  void StopMonitorState(); /* Stops the thread monitoring state */
+
+private:
+  Command(); /* Singleton */
   Command(Command const&) = delete;
   void operator=(Command const&) = delete;
 
-  void MonitorState();
-  void Connect();
-  void setCommandVars(string &_team, string &_password, string &_match_id, string &_ip);
+  // Helper Functions
+  const std::string GenerateConnectJSON(); /* To connect to match and get token */
 
-  void Fire(string tankID);
+  // State Commands
+  std::mutex running;
+  std::thread monitor_thread;
+  void UpdateState(); /* Infinite loop of updating state */
 
-private:
-  Command();
-  string GenerateConnectJSON();
-  void UpdateState();
+  // Game Commands
+  void Fire(std::string tank_id);
 
-  string team;
-  string password;
-  string match_id;
-  string ip;
+  // Match Variables
+  std::string match;
+  std::string team;
+  std::string password;
+  std::string ip;
+  std::string token; /* Returned from ZMQ on successful authentication */
 
-  string client_token;
-
+  // ZMQ Variables
   zmq::context_t context;
   zmq::socket_t state_socket;
   zmq::socket_t command_socket;
 };
 
-Command::Command()  : context(1), state_socket(context, ZMQ_SUB), command_socket(context, ZMQ_REQ) {
+Command::Command() : context(1), state_socket(context, ZMQ_SUB), command_socket(context, ZMQ_REQ) {
 }
 
-void Command::setCommandVars(string &_team, string &_password, string &_match_id, string &_ip) {
-
+void Command::Setup(const std::string &_match, const std::string &_team, const std::string &_pass, const std::string &_ip) {
+  match = _match;
   team = _team;
-  password = _password;
-  match_id = _match_id;
+  password = _pass;
   ip = _ip;
-  // Create String to Connect
-  // TODO: Seperate port numbers as literals
-  string state = "tcp://" + ip + ":5556";
-  string command = "tcp://" + ip + ":5557";
 
-  // Configure
-  // Filter only messages related to the current match
-  state_socket.setsockopt(ZMQ_SUBSCRIBE, _match_id.c_str(), _match_id.length());
+  std::string connect_str = GenerateConnectJSON();
 
-  // Connect
-  state_socket.connect(state.c_str());
-  command_socket.connect(command.c_str());
-}
+  // Configure ZMQ
+  std::string state_addr = "tcp://" + ip + ":5556";
+  std::string command_addr = "tcp://" + ip + ":5557";
+  state_socket.setsockopt(ZMQ_SUBSCRIBE, match.c_str(), match.length());
 
-string Command::GenerateConnectJSON() {
-  // Construct JSON
-  Document d;
-  Document::AllocatorType& allocator = d.GetAllocator();
-  d.SetObject();
-  d.AddMember("comm_type", "MatchConnect", allocator);
-  d.AddMember("match_token", StringRef(match_id.c_str()), allocator);
-  d.AddMember("team_name", StringRef(team.c_str()), allocator);
-  d.AddMember("password", StringRef(password.c_str()), allocator);
+  // Connect to ZMQ
+  state_socket.connect(state_addr.c_str());
+  command_socket.connect(command_addr.c_str());
 
-  // Get JSON String
-  StringBuffer buf;
-  Writer<StringBuffer> writer(buf);
-  d.Accept(writer);
-  return buf.GetString();
-}
-
-void Command::Connect() {
-  string connectJSON = GenerateConnectJSON();
-
-  // Generate the request
-  zmq::message_t request(connectJSON.length());
-  memcpy(request.data(), connectJSON.c_str(), connectJSON.length());
-
-  // Send the request
+  // Setup Game
+  // Prepare
+  zmq::message_t request(connect_str.length());
+  memcpy(request.data(), connect_str.c_str(), connect_str.length());
+  // Send
   command_socket.send(request);
-
-  // Get the reply
+  // Parse Reply
   zmq::message_t reply;
   command_socket.recv(&reply);
+  std::string reply_str(static_cast<char*>(reply.data()), reply.size());
+  rapidjson::Document d;
+  d.Parse(reply_str.c_str());
 
-  Document d;
-  string reply_data = string(static_cast<char*>(reply.data()), reply.size());
-  d.Parse(reply_data.c_str());
+  #ifdef NDEBUG
+  std::cout << "--------------- Response ---------------" << std::endl;
+  std::cout << "  " << reply_str << std::endl;
+  std::cout << "----------------------------------------" << std::endl << std::endl;
 
-  cout << "--------------- Response ---------------" << endl;
-  cout << "  " << static_cast<char*>(reply.data()) << endl;
-  cout << "----------------------------------------" << endl << endl;
-
-  // Verify things are okay
+  // Verify things are OK
   assert(d.HasMember("resp"));
-  string resp = d["resp"].GetString();
+  std::string resp = d["resp"].GetString();
   assert(resp.compare("ok") == 0);
-  assert(d.HasMember("comm_type"));
   assert(d.HasMember("client_token"));
+  #endif
 
-  // Store client token
-  client_token = d["client_token"].GetString();
+  // Set Token
+  token = d["client_token"].GetString();
+}
+
+const std::string Command::GenerateConnectJSON() {
+  // Construct JSON
+  rapidjson::Document d;
+  rapidjson::Document::AllocatorType& a = d.GetAllocator();
+  d.SetObject();
+  d.AddMember("comm_type", "MatchConnect", a);
+  d.AddMember("match_token", rapidjson::StringRef(match.c_str()), a);
+  d.AddMember("team_name", rapidjson::StringRef(team.c_str()), a);
+  d.AddMember("password", rapidjson::StringRef(password.c_str()), a);
+
+  // Get JSON String
+  rapidjson::StringBuffer b;
+  rapidjson::Writer<rapidjson::StringBuffer> w(b);
+  d.Accept(w);
+
+  #ifdef NDEBUG
+  std::cout << "Generated Connect JSON:" << std::endl;
+  std::cout << b.GetString() << std::endl;
+  std::cout << "----------------------------------------" << std::endl << std::endl;
+  #endif
+
+  return b.GetString();
+}
+
+void Command::Fire(std::string tank_id) {
 }
 
 void Command::UpdateState() {
   while(true) {
-    // Get new state data
-    zmq::message_t state;
-    state_socket.recv(&state);
+    // Check if we're still supposed to be running
+    if(running.try_lock()) {
+      // Get new state data
+      zmq::message_t m;
+      state_socket.recv(&m);
 
-    // Parse what we got
-    string data(static_cast<char*>(state.data()), state.size());
-    State& s = State::Instance();
-    s.ParseJSON(data, match_id);
+      // Parse what we got
+      std::string d(static_cast<char*>(m.data()), m.size());
+      State &s = State::Instance();
+      s.Update(d);
+    } else {
+      // We're supposed to die
+      break;
+    }
+    running.unlock();
   }
 }
 
-void Command::MonitorState() {
-  // Start the monitoring thread!
-  std::thread monitor_thread(&Command::UpdateState, this);
-  monitor_thread.detach();
+void Command::StartMonitorState() {
+  monitor_thread = std::thread(&Command::UpdateState, this);
 }
 
-void Command::Fire(string tankID) {
-  // Generate Fire JSON
-  Document d;
-  Document::AllocatorType& allocator = d.GetAllocator();
-  d.SetObject();
-  d.AddMember("tank_id", StringRef(tankID.c_str()), allocator);
-  d.AddMember("comm_type", "FIRE", allocator);
-  d.AddMember("client_token", StringRef(client_token.c_str()), allocator);
-
-  // Get JSON String
-  StringBuffer buf;
-  Writer<StringBuffer> writer(buf);
-  d.Accept(writer);
-  string fire_command = buf.GetString();
-
-  // Generate Fire Command
-  zmq::message_t request(fire_command.length());
-  memcpy(request.data(), fire_command.c_str(), fire_command.length());
-
-  // Send Fire Command
-  command_socket.send(request);
-
-  // Get reply
-  zmq::message_t reply;
-  command_socket.recv(&reply);
-  Document d2;
-  string reply_json(static_cast<char*>(reply.data()), reply.size());
-  d2.Parse(reply_json.c_str());
-  cout << "we got this from firing: " << reply_json << endl;
+void Command::StopMonitorState() {
+  running.lock();
+  monitor_thread.join();
+  running.unlock();
 }

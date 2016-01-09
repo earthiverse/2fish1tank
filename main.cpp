@@ -1,68 +1,60 @@
 #include <iostream>
 #include <boost/program_options.hpp>
+
 #include "command.hpp"
-namespace po = boost::program_options;
-using namespace std;
+#include "state.hpp" /* TEMP */
+
+void ShowUsage(const boost::program_options::options_description &desc) {
+  std::cout << desc << std::endl;
+}
 
 int main(int argc, char* argv[]) {
-  // Command line argument parsing provided by boost!
-  po::options_description desc("2fish1tank options");
+  // Program options handled by Boost
+  boost::program_options::options_description desc("2fish1tank options");
   desc.add_options()
-    ("help", "Show Program Usage")
-    ("match", po::value<string>(), "Match ID")
-    ("team", po::value<string>(), "Team Name")
-    ("password", po::value<string>(), "Team Password")
-    ("ip", po::value<string>(), "Server IP")
-  ;
-  po::variables_map args;
-  po::store(po::command_line_parser(argc, argv)
+    ("help,h", "Display this program usage")
+    ("match,m", boost::program_options::value<std::string>(), "Match ID")
+    ("team,t", boost::program_options::value<std::string>(), "Team Name")
+    ("password,p", boost::program_options::value<std::string>(), "Team Password")
+    ("ip,i", boost::program_options::value<std::string>(), "Competition Server IP");
+
+  boost::program_options::variables_map args;
+  boost::program_options::store(boost::program_options::command_line_parser(argc, argv)
     .options(desc)
-    .style(po::command_line_style::default_style | po::command_line_style::allow_long_disguise)
+    .style(boost::program_options::command_line_style::default_style
+      | boost::program_options::command_line_style::allow_long_disguise)
     .run(), args);
-  po::notify(args);
+  boost::program_options::notify(args);
 
-  if(args.size() < 4 || args.count("help")) {
-    // Show help
-    cout << desc << endl;
+  if(args.count("help")) {
+    ShowUsage(desc);
     return 0;
+  } else if(!args.count("match") || !args.count("team") || !args.count("password") || !args.count("ip")) {
+    // Not enough arguments to run
+    ShowUsage(desc);
+    return 1;
   }
 
-  string match = args["match"].as<string>();
-  string team = args["team"].as<string>();
-  string password = args["password"].as<string>();
-  string ip = args["ip"].as<string>();
+  std::string match = args["match"].as<std::string>();
+  std::string team = args["team"].as<std::string>();
+  std::string password = args["password"].as<std::string>();
+  std::string ip = args["ip"].as<std::string>();
 
-  // Display the configuration
-  cout << "Launching 2fish1tank..." << endl;
-  cout << "------------ Configuration -------------" << endl;
-  cout << "  Match ID: " << match << endl;
-  cout << "  Team Name: " << team << endl;
-  cout << "  Team Password: " << password << endl;
-  cout << "  Server IP: " << ip << endl;
-  cout << "----------------------------------------" << endl << endl;
+  // Start monitoring state
+//  State &state = State::Instance();
 
-  // Setup State
-  State &state = State::Instance();
-  state.SetMatchData(match, team);
-
-  // Connect
-  cout << "Connecting to '" << ip << "'..." << endl;
-
+  // Setup game
   Command &command = Command::Instance();
+  command.Setup(match, team, password, ip);
+  command.StartMonitorState();
 
-  command.setCommandVars(team, password, match, ip);
-  command.Connect();
-
-  // Start Monitoring Game State
-  cout << "Starting State Monitor..." << endl;
-  command.MonitorState();
-
-  // Start Bot
   while(true) {
-    // TODO: Get State
-    cout << "Doing Bot Stuff" << endl;
+    #ifdef NDEBUG
+    std::cout << "Game is running..." << std::endl;
+    #endif
 
-    sleep(10);
+    usleep(100);
   }
+
   return 0;
 }
