@@ -19,6 +19,8 @@ public:
 
   std::pair<double,double> getVector(Tank tank);
   std::pair<double, double> getVector(double x, double y, double x1, double y2);
+  
+  bool canFire(Tank tank);
 
 private:
 };
@@ -91,4 +93,11 @@ std::pair<double, double> TankManager::getVector(double x, double y, double x1, 
   vec.first = x - x1;
   vec.second = y - y1;
   return vec;
+}
+
+bool TankManager::canFire(Tank tank) {
+  auto firevec = getVector(tank);
+  while(1) {
+  
+  }
 }
