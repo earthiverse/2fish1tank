@@ -53,7 +53,7 @@ Tank TankManager::getClosestEnemyTank(Tank shooter) {
 }
 
 void TankManager::fireAt(Tank shooter, Tank target) {
-  auto vec1 = getVector(shooter);
+  /*auto vec1 = getVector(shooter);
   double dot = vec1.first * target.getx() + vec1.second * target.gety();
   double length = sqrt( pow( vec1.first, 2) + pow( vec1.second, 2)) * sqrt( pow( target.getx(),2) + pow( target.gety(),2) );
   double theta = acos(dot/length);
@@ -61,6 +61,14 @@ void TankManager::fireAt(Tank shooter, Tank target) {
     shooter.RotateTurret(CCW, theta);
   } else {
     shooter.RotateTurret(CW, theta);
+  }
+  shooter.Fire();*/
+  double angle = atan2(target.gety() - shooter.gety(), target.getx() - shooter.getx());
+  double turn = angle - shooter.getturret();
+  if (turn  > 0) {
+    shooter.RotateTurret(CCW, turn);
+  } else {
+    shooter.RotateTurret(CW, -1 * turn);
   }
   shooter.Fire();
 }
@@ -93,5 +101,3 @@ std::pair<double, double> TankManager::getVector(double x, double y, double x1, 
   vec.second = y - y1;
   return vec;
 }
-
-
