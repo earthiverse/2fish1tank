@@ -2,7 +2,6 @@
 #include <chrono>
 #include <mutex>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 
 #include "command.hpp"
@@ -26,9 +25,9 @@ public:
   // State monitoring
   void StartMonitoring(); /* Creates & starts thread to monitor state */
   void StopMonitoring(); /* Stops the thread monitoring state */
- 
-  const std::unordered_map<std::string, Tank> &getPlayerTanks();
-  const std::unordered_map<std::string, Tank> &getEnemyTanks();
+
+  const std::vector<Tank> &getPlayerTanks();
+  const std::vector<Tank> &getEnemyTanks();
 private:
   State();
 
@@ -37,13 +36,16 @@ private:
   std::chrono::milliseconds timestamp;
   double width; /* Map width */
   double height; /* Map height */
-  std::unordered_map<std::string, Tank> player_tanks;
-  std::unordered_map<std::string, Tank> enemy_tanks;
+  std::vector<Tank> player_tanks;
+  std::vector<Tank> enemy_tanks;
 //  std::unordered_map<std::string, Projectile> player_projectiles;
 //  std::unordered_map<std::string, Projectile> enemy_projectiles;
   // Top left x-axis, top left y-axis, width, height
   std::vector<Terrain> solid_terrain; /* Can not shoot or move */
   std::vector<Terrain> impassable_terrain; /* Cannot move, can shoot */
+
+  // Misc.
+  std::string team;
 
   // State Monitoring
   std::mutex running;
@@ -52,9 +54,12 @@ private:
 };
 
 State::State() {
+  Command &command = Command::Instance();
+  team = command.GetTeamName();
 }
 
 void State::Update(const std::string &json) {
+  std::chrono::milliseconds _timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
   rapidjson::Document d;
   d.Parse(json.c_str());
 
@@ -67,17 +72,42 @@ void State::Update(const std::string &json) {
     } else if(comm_type.compare("MatchEnd") == 0) {
       // Match has ended
     } else if(comm_type.compare("GAMESTATE") == 0) {
-      std::cout << "SAMPLE GAMESTATE: " << std::endl;
-      std::cout << json << std::endl << std::endl;
-      
-      // Game is currently running
-      double _time_remaining = d["timeRemaining"].GetDouble();
-//      std::chrono::milliseconds _time_remaining = std::chrono::duration_cast<
-      std::chrono::milliseconds _timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-
-      // Lock & Update State
       std::lock_guard<std::mutex> lock(mutex);
+      // General State Stuff
       timestamp = _timestamp;
+
+      std::cout << "hello?" << std::endl;
+
+      // TODO: Map stuff
+
+      // Players
+      const rapidjson::Value &v_players = d["players"];
+      for(rapidjson::SizeType i = 0; i < v_players.Size(); i++) {
+        const rapidjson::Value &v_player = v_players[i];
+        std::string player_name = v_player["name"].GetString();
+
+        // Tanks
+        // Clear existing data
+        player_tanks.clear();
+        enemy_tanks.clear();
+        // Set new data
+        const rapidjson::Value &v_tanks = v_players["tanks"];
+        for(rapidjson::SizeType j = 0; j < v_tanks.Size(); j++) {
+          const rapidjson::Value &v_tank = v_tanks[j];
+          std::string tank_id = v_tank["id"].GetString();
+          Tank tank(tank_id);
+
+          if(team.compare(player_name) == 0) {
+            // It's us!
+            player_tanks.push_back(tank);
+          } else {
+            // It's the enemy!
+            enemy_tanks.push_back(tank);
+          }
+        }
+
+      }
+
     }
 
   } else {
@@ -112,11 +142,11 @@ void State::StopMonitoring() {
 }
 
 
-const std::unordered_map<std::string, Tank> & State::getPlayerTanks() {
+const std::vector<Tank> & State::getPlayerTanks() {
   return player_tanks;
 };
 
 
-const std::unordered_map<std::string, Tank> & State::getEnemyTanks() {
+const std::vector<Tank> & State::getEnemyTanks() {
   return enemy_tanks;
 };

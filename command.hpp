@@ -29,6 +29,9 @@ public:
   void Rotate(const std::string &tank_id, const Rotation &rot, const double &rad);
   void RotateTurret(const std::string &tank_id, const Rotation &rot, const double &rad);
 
+  // Getters
+  const std::string &GetTeamName();
+
 private:
   Command(); /* Singleton */
   Command(Command const&) = delete;
@@ -154,4 +157,8 @@ std::string Command::SendCommand(const std::string &json) {
   zmq::message_t reply;
   command_socket.recv(&reply);
   return std::string(static_cast<char*>(reply.data()), reply.size());
+}
+
+const std::string &Command::GetTeamName() {
+  return team;
 }
