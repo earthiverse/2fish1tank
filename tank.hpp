@@ -1,8 +1,15 @@
 #pragma once
+#include <vector>
 
 #include "command.hpp"
 
 enum TankType { FAST, SLOW };
+
+struct PositionHistory {
+  double x;
+  double y;
+  double time;
+};
 
 class Tank {
   friend class State;
@@ -25,6 +32,8 @@ private:
   double x;
   double y;
   bool alive;
+
+  std::vector<PositionHistory> previous_positions;
 };
 
 Tank::Tank(std::string id) : id(id) {

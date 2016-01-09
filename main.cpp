@@ -44,6 +44,7 @@ int main(int argc, char* argv[]) {
   // Setup game
   Command &command = Command::Instance();
   command.Setup(match, team, password, ip);
+  usleep(100);
 
   // Start monitoring state
   State &state = State::Instance();
