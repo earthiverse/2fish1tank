@@ -23,13 +23,19 @@ private:
 };
 
 void TankManager::Act() {
+  State &state = State::Instance();
+  std::lock_guard<std::mutex> lock(state.mutex);
   for (auto tank : State::Instance().getPlayerTanks()) {
+    if(!tank.isAlive()) {
+      continue;
+    }
     Tank target = getClosestEnemyTank(tank);
     //tank.RotateTurret(CW, 3.14);
     //tank.Fire();
     //tank.Move(FWD, 5);
     //tank.Rotate(CW, 3.14);
     fireAt(tank,target);
+    std::cout << "tank id: " << tank.getID() << std::endl;
   }
 }
 

@@ -5,6 +5,8 @@
 enum TankType { FAST, SLOW };
 
 class Tank {
+  friend class State;
+
 public:
   Tank(std::string id);
   void Fire();
@@ -12,6 +14,9 @@ public:
   void Rotate(const Rotation &rot, const double &amt);
   void RotateTurret(const Rotation &rot, const double &amt);
 
+  bool isAlive();
+
+  const std::string &getID();
   const double &getx();
   const double &gety();
   const double &getturret();
@@ -21,6 +26,7 @@ private:
   double x;
   double y;
   double turret;
+  bool alive;
 };
 
 Tank::Tank(std::string id) : id(id) {
@@ -33,6 +39,8 @@ void Tank::Fire() {
 // TODO: Send fire command
 }
 
+bool Tank::isAlive() { return alive; };
+const std::string &Tank::getID() { return id; }
 const double &Tank::getx() { return x; }
 const double &Tank::gety() { return y; }
 
@@ -47,7 +55,7 @@ void Tank::Move(const Direction &dir, const double &amt) {
   command.Move(id, dir, amt);
 }
 void Tank::Rotate(const Rotation &rot, const double &amt) {
-  Command $command = Command::Instance();
+  Command &command = Command::Instance();
   command.Rotate(id, rot, amt);
 }
 
