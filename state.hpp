@@ -71,6 +71,8 @@ void State::Update(const std::string &json) {
       // Match has started
     } else if(comm_type.compare("MatchEnd") == 0) {
       // Match has ended
+    } else if(comm_type.compare("GAME_END") == 0) {
+      // Game has ended
       running.lock();
     } else if(comm_type.compare("GAMESTATE") == 0) {
       std::lock_guard<std::mutex> lock(mutex);
@@ -80,9 +82,9 @@ void State::Update(const std::string &json) {
       // TODO: Map stuff
 
       // Players
-      const rapidjson::Value &v_players = d["players"];
+      rapidjson::Value &v_players = d["players"];
       for(rapidjson::SizeType i = 0; i < v_players.Size(); i++) {
-        const rapidjson::Value &v_player = v_players[i];
+        rapidjson::Value &v_player = v_players[i];
         std::string player_name = v_player["name"].GetString();
 
         // Tanks
@@ -90,9 +92,9 @@ void State::Update(const std::string &json) {
         player_tanks.clear();
         enemy_tanks.clear();
         // Set new data
-        const rapidjson::Value &v_tanks = v_player["tanks"];
+        rapidjson::Value &v_tanks = v_player["tanks"];
         for(rapidjson::SizeType j = 0; j < v_tanks.Size(); j++) {
-          const rapidjson::Value &v_tank = v_tanks[j];
+          rapidjson::Value &v_tank = v_tanks[j];
           std::string tank_id = v_tank["id"].GetString();
           Tank tank(tank_id);
           tank.x = v_tank["position"][0].GetDouble();
