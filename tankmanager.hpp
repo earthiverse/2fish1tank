@@ -27,6 +27,8 @@ void TankManager::Act() {
     }
 
     std::cout << "tank id: " << tank.getID() << std::endl;
+    //Tank target = getClosestEnemyTank(tank);
+    tank.RotateTurret(CW, 3.14);
     tank.Fire();
   }
 }
