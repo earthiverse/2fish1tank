@@ -26,11 +26,13 @@ public:
   const std::string &getID();
   const double &getx();
   const double &gety();
+  const double &getturret();
 
 private:
   std::string id;
   double x;
   double y;
+  double turret;
   bool alive;
 
   std::vector<PositionHistory> previous_positions;
@@ -65,4 +67,7 @@ void Tank::Rotate(const Rotation &rot, const double &amt) {
   Command &command = Command::Instance();
   command.Rotate(id, rot, amt);
 }
- 
+
+const double & Tank::getturret() {
+  return turret;
+}
