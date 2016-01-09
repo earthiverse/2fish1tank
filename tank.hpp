@@ -47,3 +47,13 @@ void Tank::RotateTurret(const Rotation &rot, const double &amt) {
   Command &command = Command::Instance();
   command.RotateTurret(id, rot, amt);
 }
+
+void Tank::Move(const Direction &dir, const double &amt) {
+  Command &command = Command::Instance();
+  command.Move(id, dir, amt);
+}
+void Tank::Rotate(const Rotation &rot, const double &amt) {
+  Command $command = Command::Instance();
+  command.Rotate(id, rot, amt);
+}
+ 

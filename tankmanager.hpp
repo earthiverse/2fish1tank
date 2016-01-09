@@ -30,6 +30,8 @@ void TankManager::Act() {
     //Tank target = getClosestEnemyTank(tank);
     tank.RotateTurret(CW, 3.14);
     tank.Fire();
+    tank.Move(FWD, 5);
+    tank.Rotate(CW, 3.14);
   }
 }
 
