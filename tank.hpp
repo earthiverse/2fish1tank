@@ -3,14 +3,14 @@
 #include "command.hpp"
 
 enum TankType { FAST, SLOW };
-enum TankDirection { FWD, REV };
-enum TankRotation { CW, CCW };
 
 class Tank {
 public:
   Tank(std::string id);
   void Fire();
-  void Move(TankRotation rot, double amt);
+  void Move(const Direction &dir, const double &amt);
+  void Rotate(const Rotation &rot, const double &amt);
+  void RotateTurret(const Rotation &rot, const double &amt);
 
 private:
   std::string id;
@@ -24,3 +24,4 @@ void Tank::Fire() {
   Command &command = Command::Instance();
   // TODO: Send fire command
 }
+

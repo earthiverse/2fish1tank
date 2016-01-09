@@ -31,6 +31,8 @@ private:
   State();
 
   // Game Variables
+  std::chrono::milliseconds time_remaining;
+  std::chrono::milliseconds timestamp;
   double width; /* Map width */
   double height; /* Map height */
   std::unordered_map<std::string, Tank> player_tanks;
@@ -63,19 +65,17 @@ void State::Update(const std::string &json) {
     } else if(comm_type.compare("MatchEnd") == 0) {
       // Match has ended
     } else if(comm_type.compare("GAMESTATE") == 0) {
+      std::cout << "SAMPLE GAMESTATE: " << std::endl;
+      std::cout << json << std::endl << std::endl;
+      
       // Game is currently running
-//      double _time_remaining = d["timeRemaining"].GetDouble();
-      double _timestamp = d["timestamp"].GetDouble();
-
-      #ifdef NDEBUG
-      std::cout << "Message Timestamp: " << _timestamp << std::endl;
-      std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-      std::cout << "Current Timestamp: " << ms.count() << std::endl;
-      #endif
+      double _time_remaining = d["timeRemaining"].GetDouble();
+//      std::chrono::milliseconds _time_remaining = std::chrono::duration_cast<
+      std::chrono::milliseconds _timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 
       // Lock & Update State
       std::lock_guard<std::mutex> lock(mutex);
-      // TODO: Update
+      timestamp = _timestamp;
     }
 
   } else {

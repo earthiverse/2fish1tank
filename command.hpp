@@ -7,6 +7,9 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
+enum Direction { FWD, REV };
+enum Rotation { CW, CCW };
+
 class Command {
 public:
   static Command& Instance() {
@@ -22,14 +25,18 @@ public:
 
   // Game Commands
   void Fire(const std::string &tank_id);
+  void Move(const std::string &tank_id, const Direction &dir, const double &amt);
+  void Rotate(const std::string &tank_id, const Rotation &rot, const double &rad);
+  void RotateTurret(const std::string &tank_id, const Rotation &rot, const double &rad);
+
 private:
   Command(); /* Singleton */
   Command(Command const&) = delete;
   void operator=(Command const&) = delete;
 
   // Helper Functions
+  std::string SendCommand(const std::string &json);
   const std::string GenerateConnectJSON(); /* To connect to match and get token */
-
 
   // Match Variables
   std::string match;
@@ -53,8 +60,6 @@ void Command::Setup(const std::string &_match, const std::string &_team, const s
   password = _pass;
   ip = _ip;
 
-  std::string connect_str = GenerateConnectJSON();
-
   // Configure ZMQ
   std::string state_addr = "tcp://" + ip + ":5556";
   std::string command_addr = "tcp://" + ip + ":5557";
@@ -65,15 +70,7 @@ void Command::Setup(const std::string &_match, const std::string &_team, const s
   command_socket.connect(command_addr.c_str());
 
   // Setup Game
-  // Prepare
-  zmq::message_t request(connect_str.length());
-  memcpy(request.data(), connect_str.c_str(), connect_str.length());
-  // Send
-  command_socket.send(request);
-  // Parse Reply
-  zmq::message_t reply;
-  command_socket.recv(&reply);
-  std::string reply_str(static_cast<char*>(reply.data()), reply.size());
+  std::string reply_str = SendCommand(GenerateConnectJSON());
   rapidjson::Document d;
   d.Parse(reply_str.c_str());
 
@@ -107,14 +104,15 @@ const std::string Command::GenerateConnectJSON() {
   rapidjson::StringBuffer b;
   rapidjson::Writer<rapidjson::StringBuffer> w(b);
   d.Accept(w);
+  std::string json = b.GetString();
 
   #ifdef NDEBUG
   std::cout << "Generated Connect JSON:" << std::endl;
-  std::cout << b.GetString() << std::endl;
+  std::cout << json << std::endl;
   std::cout << "----------------------------------------" << std::endl << std::endl;
   #endif
 
-  return b.GetString();
+  return json;
 }
 
 void Command::Fire(const std::string &tank_id) {
@@ -125,6 +123,14 @@ void Command::Fire(const std::string &tank_id) {
   d.AddMember("tank_id", rapidjson::StringRef(tank_id.c_str()), a);
   d.AddMember("comm_type", "FIRE", a);
   d.AddMember("client_token", rapidjson::StringRef(token.c_str()), a);
+
+  // Get JSON String
+  rapidjson::StringBuffer b;
+  rapidjson::Writer<rapidjson::StringBuffer> w(b);
+  d.Accept(w);
+  std::string json = b.GetString();
+
+  // Send Command
 }
 
 std::string Command::GetStateJSON() {
@@ -134,4 +140,18 @@ std::string Command::GetStateJSON() {
 
   // Parse what we got
   return std::string(static_cast<char*>(m.data()), m.size());
+}
+
+std::string Command::SendCommand(const std::string &json) {
+  // Prepare
+  zmq::message_t request(json.length());
+  memcpy(request.data(), json.c_str(), json.length());
+
+  // Send
+  command_socket.send(request);
+
+  // Return Response
+  zmq::message_t reply;
+  command_socket.recv(&reply);
+  return std::string(static_cast<char*>(reply.data()), reply.size());
 }

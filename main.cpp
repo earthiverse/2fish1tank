@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 
   while(true) {
     #ifdef NDEBUG
-    std::cout << "Game is running..." << std::endl;
+//    std::cout << "Game is running..." << std::endl;
     #endif
 
     usleep(100);
