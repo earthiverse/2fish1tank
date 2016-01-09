@@ -19,7 +19,14 @@ private:
 };
 
 void TankManager::Act() {
+  State &state = State::Instance();
+  std::lock_guard<std::mutex> lock(state.mutex);
   for (auto tank : State::Instance().getPlayerTanks()) {
+    if(!tank.isAlive()) {
+      continue;
+    }
+
+    std::cout << "tank id: " << tank.getID() << std::endl;
     tank.Fire();
   }
 }

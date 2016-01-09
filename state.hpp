@@ -76,8 +76,6 @@ void State::Update(const std::string &json) {
       // General State Stuff
       timestamp = _timestamp;
 
-      std::cout << "hello?" << std::endl;
-
       // TODO: Map stuff
 
       // Players
@@ -91,11 +89,13 @@ void State::Update(const std::string &json) {
         player_tanks.clear();
         enemy_tanks.clear();
         // Set new data
-        const rapidjson::Value &v_tanks = v_players["tanks"];
+        const rapidjson::Value &v_tanks = v_player["tanks"];
         for(rapidjson::SizeType j = 0; j < v_tanks.Size(); j++) {
           const rapidjson::Value &v_tank = v_tanks[j];
           std::string tank_id = v_tank["id"].GetString();
+          bool alive = v_tank["alive"].GetBool();
           Tank tank(tank_id);
+          tank.alive = alive;
 
           if(team.compare(player_name) == 0) {
             // It's us!

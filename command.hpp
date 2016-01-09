@@ -134,6 +134,45 @@ void Command::Fire(const std::string &tank_id) {
   std::string json = b.GetString();
 
   // Send Command
+  std::string reply_str = SendCommand(json);
+  #ifdef NDEBUG
+  std::cout << "--------------- Response ---------------" << std::endl;
+  std::cout << "  " << reply_str << std::endl;
+  std::cout << "----------------------------------------" << std::endl << std::endl;
+  #endif
+}
+
+void Command::RotateTurret(const std::string &tank_id, const Rotation &rot, const double &rad) {
+  // Construct JSON
+  rapidjson::Document d;
+  rapidjson::Document::AllocatorType &a = d.GetAllocator();
+  d.SetObject();
+  d.AddMember("tank_id", rapidjson::StringRef(tank_id.c_str()), a);
+  d.AddMember("comm_type", "ROTATE_TURRET", a);
+  switch(rot) {
+    case CW:
+      d.AddMember("direction", "CW", a);
+      break;
+    case CCW:
+      d.AddMember("direction", "CCW", a);
+      break;
+  }
+  d.AddMember("rads", rad, a);
+  d.AddMember("client_token", rapidjson::StringRef(token.c_str()), a);
+
+  // Get JSON String
+  rapidjson::StringBuffer b;
+  rapidjson::Writer<rapidjson::StringBuffer> w(b);
+  d.Accept(w);
+  std::string json = b.GetString();
+
+  // Send Command
+  std::string reply_str = SendCommand(json);
+  #ifdef NDEBUG
+  std::cout << "--------------- Response ---------------" << std::endl;
+  std::cout << "  " << reply_str << std::endl;
+  std::cout << "----------------------------------------" << std::endl << std::endl;
+  #endif
 }
 
 std::string Command::GetStateJSON() {
