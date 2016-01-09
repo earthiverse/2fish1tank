@@ -2,7 +2,8 @@
 #include <boost/program_options.hpp>
 
 #include "command.hpp"
-#include "state.hpp" /* TEMP */
+#include "state.hpp"
+#include "tankmanager.hpp"
 
 void ShowUsage(const boost::program_options::options_description &desc) {
   std::cout << desc << std::endl;
