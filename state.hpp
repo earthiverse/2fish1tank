@@ -18,6 +18,7 @@ public:
 
   void Update();
 
+  bool gameHasEnded();
   const std::vector<Tank> &getPlayerTanks();
   const std::vector<Tank> &getEnemyTanks();
 private:
@@ -35,6 +36,7 @@ private:
   // Top left x-axis, top left y-axis, width, height
   std::vector<Terrain> solid_terrain; /* Can not shoot or move */
   std::vector<Terrain> impassable_terrain; /* Cannot move, can shoot */
+  bool gameEnded;
 
   // Misc.
   std::string team;
@@ -61,14 +63,33 @@ void State::Update() {
       // Match has started
     } else if(comm_type.compare("MatchEnd") == 0) {
       // Match has ended
+      gameEnded = true;
     } else if(comm_type.compare("GAME_END") == 0) {
       // Game has ended
-      // TODO: Something to end the program
     } else if(comm_type.compare("GAMESTATE") == 0) {
       // General State Stuff
       timestamp = _timestamp;
 
-     // TODO: Map stuff
+      // Map
+      const rapidjson::Value &terrains = d["map"]["terrain"];
+
+      // Clear existing map data
+      solid_terrain.clear();
+      impassable_terrain.clear();
+      for(rapidjson::SizeType i = 0; i < terrains.Size(); i++) {
+        const rapidjson::Value &terrain = terrains[i];
+        Terrain t;
+        t.x = terrain["boundingBox"]["corner"][0].GetDouble();
+        t.y = terrain["boundingBox"]["corner"][1].GetDouble();
+        t.width = terrain["boundingBox"]["size"][0].GetDouble();
+        t.height = terrain["boundingBox"]["size"][1].GetDouble();
+        std::string type = terrain["type"].GetString();
+        if(type.compare("IMPASSABLE") == 0) {
+          impassable_terrain.push_back(t);
+        } else if(type.compare("SOLID") == 0) {
+          solid_terrain.push_back(t);
+        }
+      }
 
       // Players
       rapidjson::Value &v_players = d["players"];
@@ -113,10 +134,13 @@ void State::Update() {
   }
 }
 
+bool State::gameHasEnded() {
+  return gameEnded;
+}
+
 const std::vector<Tank> & State::getPlayerTanks() {
   return player_tanks;
 };
-
 
 const std::vector<Tank> & State::getEnemyTanks() {
   return enemy_tanks;

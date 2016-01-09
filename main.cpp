@@ -54,13 +54,11 @@ int main(int argc, char* argv[]) {
     while(true) {
       // Update State
       state.Update();
-
-      // Act on the updated state
-      #ifdef NDEBUG
-  //    std::cout << "Game is running..." << std::endl;
-      #endif
       tankmanager.Act();
-      usleep(10000);
+
+      if(state.gameHasEnded()) {
+        break;
+      }
     }
   } catch (const std::exception &e) {
     std::cout << "!!!!! Caught Exception!" << std::endl;

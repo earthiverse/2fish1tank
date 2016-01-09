@@ -25,6 +25,7 @@ public:
 
   // Game Commands
   void Fire(const std::string &tank_id);
+  void StopFire(const std::string &tank_id);
   void Move(const std::string &tank_id, const Direction &dir, const double &amt);
   void Rotate(const std::string &tank_id, const Rotation &rot, const double &rad);
   void RotateTurret(const std::string &tank_id, const Rotation &rot, const double &rad);
@@ -125,6 +126,31 @@ void Command::Fire(const std::string &tank_id) {
   d.SetObject();
   d.AddMember("tank_id", rapidjson::StringRef(tank_id.c_str()), a);
   d.AddMember("comm_type", "FIRE", a);
+  d.AddMember("client_token", rapidjson::StringRef(token.c_str()), a);
+
+  // Get JSON String
+  rapidjson::StringBuffer b;
+  rapidjson::Writer<rapidjson::StringBuffer> w(b);
+  d.Accept(w);
+  std::string json = b.GetString();
+
+  // Send Command
+  std::string reply_str = SendCommand(json);
+  #ifdef NDEBUG
+  std::cout << "--------------- Response ---------------" << std::endl;
+  std::cout << "  " << reply_str << std::endl;
+  std::cout << "----------------------------------------" << std::endl << std::endl;
+  #endif
+}
+
+void Command::StopFire(const std::string &tank_id) {
+  // Construct JSON
+  rapidjson::Document d;
+  rapidjson::Document::AllocatorType &a = d.GetAllocator();
+  d.SetObject();
+  d.AddMember("tank_id", rapidjson::StringRef(tank_id.c_str()), a);
+  d.AddMember("comm_type", "STOP", a);
+  d.AddMember("control", "FIRE", a);
   d.AddMember("client_token", rapidjson::StringRef(token.c_str()), a);
 
   // Get JSON String
